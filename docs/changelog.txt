@@ -1,3 +1,13 @@
+Version 1.0.1
+	- We now use nasm
+	- boot.s converted to intel syntax to support nasm
+	- Include files supported in makefile
+	- vga text mode code now contained in vga.c file
+	- Multiboot magic number and multiboot information structure now passed to kernel_main function
+	- Primitive printf implementation
+	- Bin files iso/boot/ProstagmOS.bin removed from git and added to make clean removal
+	
+
 Version 1.0.0
 	- Initial Commit
 	- Project structured 

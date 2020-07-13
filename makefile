@@ -3,10 +3,10 @@ TARGET = i686-elf
 
 # C compiler
 GCC = $(HOME)/opt/cross/bin/$(TARGET)-gcc
-GCC_OPTIONS = -std=gnu99 -ffreestanding -O2 -Wall -Wextra
+GCC_OPTIONS = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -g
 
 # Assembler
-AS = $(HOME)/opt/cross/bin/$(TARGET)-as
+AS = nasm #$(HOME)/opt/cross/bin/$(TARGET)-as
 
 OS_NAME = ProstagmOS
 
@@ -29,10 +29,12 @@ OBJ_FOLDER = obj
 # Get lists of asm and c source files
 ASSEMBLY_FILES := $(wildcard $(SRC_FOLDER)/*.s)
 C_FILES := $(wildcard $(SRC_FOLDER)/*.c)
+INC_FILES := $(wildcard $(INC_FOLDER)/*.h)
 
 # Get a list of all object files
 OBJ_FILES = $(patsubst $(SRC_FOLDER)/%.s, $(OBJ_FOLDER)/%.o, $(ASSEMBLY_FILES))
 OBJ_FILES += $(patsubst $(SRC_FOLDER)/%.c, $(OBJ_FOLDER)/%.o, $(C_FILES))
+
 
 # Linker script
 LINKER = linker.ld
@@ -43,17 +45,18 @@ build: $(BIN_FOLDER)/$(OS_NAME).iso
 rebuild: clean build
 
 run: $(BIN_FOLDER)/$(OS_NAME).iso
-	$(EMULATOR) -cdrom $(BIN_FOLDER)/$(OS_NAME).iso
+	$(EMULATOR) -kernel $(BIN_FOLDER)/$(OS_NAME).bin
 
 clean: 
 	rm obj/*
 	rm bin/*
+	rm iso/boot/$(OS_NAME).bin
 	
 $(OBJ_FOLDER)/%.o: $(SRC_FOLDER)/%.s
-	$(AS) $< -o $@
+	$(AS) -felf32 $< -o $@
 
-$(OBJ_FOLDER)/%.o: $(SRC_FOLDER)/%.c
-	$(GCC) -c $< -o $@ $(GCC_OPTIONS)
+$(OBJ_FOLDER)/%.o: $(SRC_FOLDER)/%.c  $(INC_FILES)
+	$(GCC) -c -I$(INC_FOLDER) $< -o $@ $(GCC_OPTIONS)
 
 $(BIN_FOLDER)/$(OS_NAME).bin: $(OBJ_FILES) $(LINKER)
 	$(GCC) -T $(LINKER) -o $(BIN_FOLDER)/$(OS_NAME).bin -ffreestanding -O2 -nostdlib $(OBJ_FILES) -lgcc
