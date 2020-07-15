@@ -47,7 +47,9 @@ void kernel_main(uint32_t magic, multiboot_info_t* multiboot_info)
 	printf("Location: %X\n", KERNEL_END);
 	
 	printf("Number: %X\n", -1);
-	printf("Number: %i\n", -455);
+	printf("Number: %i\n", 455);
+	
+	printf("END: %X\n", &_end);
 	
 
 	printf("dsfdsfdsfsdf\n");

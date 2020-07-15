@@ -15,12 +15,12 @@ size_t terminal_column;
 uint8_t terminal_color;
 uint16_t* terminal_buffer;
 
-static inline uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg) 
+inline uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg) 
 {
 	return fg | bg << 4;
 }
  
-static inline uint16_t vga_entry(unsigned char uc, uint8_t color) 
+inline uint16_t vga_entry(unsigned char uc, uint8_t color) 
 {
 	return (uint16_t) uc | (uint16_t) color << 8;
 }
@@ -131,14 +131,17 @@ void terminal_write_BCD(BCD_t number)
 			terminal_putchar(number.data[10-i] + 48);
 		}
 	}
+
+	if (leading == 1)
+		terminal_putchar('0');
 }
 
 BCD_t double_dabble(uint32_t number)
 {
 	BCD_t digits;
 	
-	// Clear the digits
-	for (int i = 0; i < 11; ++i)
+	// Clear entire structure
+	for (int i = 0; i < 12; ++i)
 		digits.data[i] = 0;
 	
 	for (int i = 0; i < 32; ++i)
@@ -183,12 +186,6 @@ BCD_t double_dabble(uint32_t number)
 	
 }
 
-void toAsciiString(BCD_t * digits)
-{
-	
-	
-}
-
 int printf(const char* format, ...)
 {
 	va_list args;
@@ -221,7 +218,6 @@ int printf(const char* format, ...)
 				case 'u':
 					{uint32_t number = va_arg(args, uint32_t);
 					BCD_t digits = double_dabble(number);
-					toAsciiString(&number);
 					terminal_write_BCD(digits);
 					}
 					break;
@@ -233,7 +229,6 @@ int printf(const char* format, ...)
 						number = ~number + 1;
 					}
 					BCD_t digits = double_dabble(number);
-					toAsciiString(&number);
 					terminal_write_BCD(digits);
 					}
 					break;

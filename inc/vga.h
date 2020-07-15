@@ -25,19 +25,16 @@ enum vga_color {
 struct BCD
 {
 	// 10 characters is enough to encode any 32 bit number into BCD.
-	char data[10];
-	char PADDING[2]; //Pad structure to make it 4-byte divisible
+	char data[12];
 };
 
 typedef struct BCD BCD_t;
 
 BCD_t double_dabble(uint32_t number);
-
-void toAsciiString(BCD_t *);
  
-static inline uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg) ;
+inline uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg) ;
  
-static inline uint16_t vga_entry(unsigned char uc, uint8_t color) ;
+inline uint16_t vga_entry(unsigned char uc, uint8_t color) ;
  
 size_t strlen(const char* str) ;
  

@@ -1,3 +1,9 @@
+Version 1.0.3
+	- Fixed various warnings
+	- memory_map_list is now setup as a list (but not a linked list yet) in allocate_initialise  
+	- Some declarations moved from allocator.c into allocator.h
+	- BCD struct is now completely zero initialised on creation
+
 Version 1.0.2
 	- _end added showing the end of the kernel
 	- %u and %i added to printf
