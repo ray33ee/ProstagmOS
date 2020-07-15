@@ -1,3 +1,9 @@
+Version 1.0.2
+	- _end added showing the end of the kernel
+	- %u and %i added to printf
+	- multiboot.h added
+	- Allocator source and header added
+
 Version 1.0.1
 	- We now use nasm
 	- boot.s converted to intel syntax to support nasm

@@ -73,7 +73,7 @@ _start:
         ; note, that if you are building on Windows, C functions may have "_" prefix in assembly: _kernel_main
 	extern kernel_main
 
-
+	
 	push	ebx
 	push 	eax
 	call kernel_main

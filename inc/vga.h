@@ -21,18 +21,25 @@ enum vga_color {
 	VGA_COLOR_LIGHT_BROWN = 14,
 	VGA_COLOR_WHITE = 15,
 };
+
+struct BCD
+{
+	// 10 characters is enough to encode any 32 bit number into BCD.
+	char data[10];
+	char PADDING[2]; //Pad structure to make it 4-byte divisible
+};
+
+typedef struct BCD BCD_t;
+
+BCD_t double_dabble(uint32_t number);
+
+void toAsciiString(BCD_t *);
  
 static inline uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg) ;
  
 static inline uint16_t vga_entry(unsigned char uc, uint8_t color) ;
  
 size_t strlen(const char* str) ;
-
- /*
-size_t terminal_row;
-size_t terminal_column;
-uint8_t terminal_color;
-uint16_t* terminal_buffer;*/
  
 void terminal_initialize(uint32_t address) ;
  
@@ -40,7 +47,7 @@ void terminal_setcolor(uint8_t color) ;
  
 void terminal_putentryat(char c, uint8_t color, size_t x, size_t y) ;
  
-void terminal_putchar(char c) ;
+void terminal_putchar(char c);
  
 void terminal_write_bytes(const uint8_t* data, size_t size) ;
  
@@ -53,5 +60,7 @@ void terminal_put_hex_byte(uint8_t byte);
 void terminal_write_byte_list(const uint8_t* bytes, uint32_t len);
 
 void terminal_write_uint32(uint32_t number);
+
+void terminal_write_BCD(BCD_t number);
 
 #endif

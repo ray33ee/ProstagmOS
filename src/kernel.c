@@ -2,9 +2,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <multiboot.h>
+
 #include <vga.h>
 
+#include <allocator.h>
+
 //extern int space;
+
+extern int _end;
  
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -16,34 +22,35 @@
 #error "This tutorial needs to be compiled with a ix86-elf compiler"
 #endif
 
+#define KERNEL_END ((uint32_t)(&_end))
  
-void kernel_main(uint32_t magic, void* multiboot_struct) 
+void kernel_main(uint32_t magic, multiboot_info_t* multiboot_info) 
 {
 	/* Initialize terminal interface */
 	terminal_initialize(0xB8000);
  
 	/* Newline support is left as an exercise. */
-	terminal_writestring("Hello world, this is ProstagmOS!\n");
+	printf("Hello world, this is ProstagmOS!\n");
 	
-	float f = 1.0f + 3.0f;
-	
-	terminal_writestring("Boot magic value: ");
-	terminal_write_uint32(magic);
-	terminal_writestring("\n");
+	printf("Boot magic value: %X\n", magic);
 	
 	if (magic != 0x2BADb002)
 	{
 		terminal_writestring("ProstagmOS only supports multiboot bootloader, and another bootloader was used. aborting...\n");
 		return;
 	}
-
+	
 	
 
-	
-	printf("hello '%X'\n", 0x44);
-	//printf("hello '%s'\n", "testoimg");
-	printf("hello '%c' - %X, %p.\n", 'f', 0x11223344, &kernel_main);
+	allocate_initialise(multiboot_info);
 
+	printf("Location: %X\n", KERNEL_END);
+	
+	printf("Number: %X\n", -1);
+	printf("Number: %i\n", -455);
+	
+
+	printf("dsfdsfdsfsdf\n");
 }
 
 
