@@ -12,14 +12,25 @@ struct memory_list_entry
 	{
 		struct
 		{
-			uint16_t length : 	10;
-			uint16_t available: 	1;
-			uint16_t allocated: 	1;
-			uint16_t unused: 	4;
+			uint32_t pointer : 	20;
+			/*union
+			{
+				struct
+				{*/
+					uint16_t available: 	1; //1 if the regions is allocatable, and not reserved for some other function
+					uint16_t allocated: 	1; //1 if the region has been allocated by the kernel
+				/*};
+				struct
+				{
+					uint16_t flags: 	2;
+				};
+			};*/
+			
+			uint32_t unused: 	10;
 		};
 		struct
 		{
-			uint16_t value;
+			uint32_t value;
 		};
 	};
 };

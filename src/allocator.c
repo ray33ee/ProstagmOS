@@ -14,14 +14,26 @@ memory_list_entry_t memory_map_list[MEMORY_MAP_LIST_SIZE];
 /* Number of total suitable bytes of memory */
 uint32_t total_available_memory = 0;
 
-/* Mark a region from 'address' of length 'length' with 'flags' */
-void mark_region(uint32_t address, uint32_t length, uint16_t flags)
+void print_map()
 {
-	uint32_t address_index = address / 0x1000; //Convert address to page number, from 0 to 1024 * 1024 - 1
-	uint32_t region_page_length = length / 0x1000; //Get number of pages in region
+	uint32_t pointer = 0;
+		
+	while (pointer != MEMORY_MAP_LIST_SIZE - 1)
+	{
+		printf("Loop Index: %X (av: %i, al: %i) , Pointer: %X\n", pointer, memory_map_list[pointer].available, memory_map_list[pointer].allocated, memory_map_list[pointer].pointer);
+		pointer = memory_map_list[pointer].pointer;
+	}	
+	
+}
+
+/* Mark a region from 'address' of length 'length' with 'flags' */
+void mark_region(uint32_t address, uint32_t length, uint32_t flags)
+{
+	uint32_t address_index = address >> 12; //Convert address (4GB) to page number, from 0 to 1024 * 1024 - 1, by dividing by 4096
+	uint32_t region_page_length = length >> 12; //Get number of pages in region, by dividing by 4096
 	
 	for (uint32_t i = 0; i < region_page_length; ++i)
-		memory_map_list[address_index + i].value = flags;
+		memory_map_list[address_index + i].available = flags ? 1 : 0;
 }
 
 /* This function takes the multiboot info structure and updates each entry of memory_map_list accordingly. 
@@ -42,16 +54,16 @@ void pre_memory_list(multiboot_info_t* multiboot_info)
 		//Also ignore everything before 1MB AND
 		//Only change the list if it is available memory, since memory starts as unavailable by default
 		if (!mmap_info->addrh && mmap_info->addrl >= 0x100000 && mmap_info->type == 1)
-			mark_region(mmap_info->addrl, mmap_info->lenl, 0);
+			mark_region(mmap_info->addrl, mmap_info->lenl, 1);
 		
-		if (!mmap_info->addrh && mmap_info->addrl >= 0x100000)
-			printf("Size: %u, Type: %u, Len: %X %X, Addr: %X %X\n", mmap_info->size, mmap_info->type, mmap_info->lenh, mmap_info->lenl, mmap_info->addrh, mmap_info->addrl);
+		//if (!mmap_info->addrh && mmap_info->addrl >= 0x100000)
+		//	printf("Size: %u, Type: %u, Len: %X %X, Addr: %X %X\n", mmap_info->size, mmap_info->type, mmap_info->lenh, mmap_info->lenl, mmap_info->addrh, mmap_info->addrl);
 		
 		size += mmap_info->size + sizeof(mmap_info->size);
 	}
 
 	//All entries from 0 to _end must be accounted for, and marked as unavailable, since this is where the kernel is located
-	mark_region(0, KERNEL_END + 4096, 0x400); //We add an extra 4096 to round up to the next page, since _end is unlikely to be page aligned
+	mark_region(0, KERNEL_END + 4096, 0); //We add an extra 4096 to round up to the next page, since _end is unlikely to be page aligned
 }
 
 /* Setup the memory_map_list and other data for page frame allocation */
@@ -59,17 +71,28 @@ void allocate_initialise(multiboot_info_t* multiboot_info)
 {
 	//By default, we start with all memory unavailable
 	for (uint32_t i = 0; i < MEMORY_MAP_LIST_SIZE; ++i)
-		memory_map_list[i].value = 0x400;
+		memory_map_list[i].value = 0;
 	
 	//If the 6th bit is set, then the mmap_* data is valid, so we use this to create our map
-	if (multiboot_info->flags | 64) 
+	if (multiboot_info->flags & 64) 
 	{
 		pre_memory_list(multiboot_info);
 		
-		for (int i = 1; i < 1024 * 1024; ++i)
-			if (memory_map_list[i].value != memory_map_list[i-1].value)
-				printf("Memory map change at %X, from %i to %i.\n", i, memory_map_list[i-1].value, memory_map_list[i].value);
+		uint32_t index = 0;
 		
+		for (int i = 1; i < MEMORY_MAP_LIST_SIZE; ++i)
+			if (memory_map_list[i].available != memory_map_list[i-1].available)
+			{
+				//printf("Memory map change at %X, from %i to %i.\n", i, memory_map_list[i-1].value, memory_map_list[i].value);
+				memory_map_list[index].pointer = i;
+				//printf("Index: %X, Pointer: %X\n", index, memory_map_list[index].length);
+				index = i;
+			}
+		
+		//Map the last block to the end 
+		memory_map_list[index].pointer = MEMORY_MAP_LIST_SIZE - 1;
+		
+		print_map();
 	}
 	else
 	{
@@ -82,11 +105,84 @@ void allocate_initialise(multiboot_info_t* multiboot_info)
 // Allocates 'length' number of contiguous pages of memory
 void* allocate_pages(uint32_t length)
 {
+	//	Walk over memory_map_list
 	
+	//		When we find an entry with a) an availibility of 1, and b) with length greater then or equal to 'length', we
+	
+	//			Save the current record pointer
+	//			Update the record pointer to (current_location + length)
+	//			Update the record status to allocated (and available)
+	//			Update the record at pointer (current_location + length) to saved pointer
+	//			return a pointer to the page
+	//	If program flow reaches here, alloc_pages was unable to find a continuous block of memory of the desired size, so we reutrn null
+	
+	uint32_t index = 0;
+		
+	while (index != MEMORY_MAP_LIST_SIZE - 1)
+	{
+		uint32_t block_length = memory_map_list[index].pointer - index - 1;
+		
+		if (memory_map_list[index].available && block_length >= length)
+		{
+			printf("Length: %X\n", memory_map_list[index].pointer - index - 1);
+			
+			uint32_t next_pointer = memory_map_list[index].pointer; //Save the pointer to the current next item
+			
+			memory_map_list[index].pointer = index + length; //Set pointer to newly created node
+			
+			memory_map_list[index].allocated = 1; //Mark the identified region as allocated
+			
+			if (block_length != length) //If the block is exactly the required length, then we do not need to create an intermediate node
+				memory_map_list[index + length].pointer = next_pointer; //Set the pointer of the newly created node to fix the list
+				
+
+			print_map();
+			
+			return (void *)(index << 12); //Return pointer to the allocated page
+		}
+		index = memory_map_list[index].pointer;
+	}	
+	
+	
+	return NULL; //If the allocation failed, return NULL
 }
 
 // Frees memory pagges at 'address'
 void free_pages(void* address)
 {
-
+	//	Convert the address to a page index
+	
+	//	If the indexed entry is unallocated or unavailable, return
+	
+	//	Walk over memory_map_list
+	
+	//		If the current points to the index then
+	
+	//			If the current entry is unallocated and available, we can merge
+	
+	//			Otherwise we must simply change the block to deallocate to deallocated and return
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

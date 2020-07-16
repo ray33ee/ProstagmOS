@@ -2,3 +2,4 @@
 VGA:
 	- Conversions between string, int, float and double
 	- printf support for float numbers, with added support for 8, 16 and 64 bit int/float
+	- Would putting memory_map_list be faster in assembly than C? (kernel takes a noticable pause when loading creating memory_map_list)

@@ -11,6 +11,8 @@
 //extern int space;
 
 extern int _end;
+extern void load_pd_table(void*);
+extern void enable_paging();
  
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -39,20 +41,41 @@ void kernel_main(uint32_t magic, multiboot_info_t* multiboot_info)
 		terminal_writestring("ProstagmOS only supports multiboot bootloader, and another bootloader was used. aborting...\n");
 		return;
 	}
-	
-	
 
 	allocate_initialise(multiboot_info);
 
+
+
 	printf("Location: %X\n", KERNEL_END);
 	
-	printf("Number: %X\n", -1);
-	printf("Number: %i\n", 455);
-	
-	printf("END: %X\n", &_end);
-	
+	//Allocate three pages, one for the PD and two for two PTs.
+	uint32_t* ptr = (uint32_t*)allocate_pages(3);
 
-	printf("dsfdsfdsfsdf\n");
+
+	//Zero out the PD and PTs
+	for (int i = 0; i < 1024 * 1024 * 3; ++i)
+		*ptr = 0;
+
+	printf("Pages: %X, %X, %X.\n", ptr, ptr + 1024, ptr + 2048);
+
+	ptr[0] = (uint32_t)(ptr + 1024) | 3;
+	ptr[1] = (uint32_t)(ptr + 2048) | 3;
+
+	uint32_t* page_tables = ptr + 1024;
+
+	for (int i = 0; i < 1024 * 1024 * 2; ++i)
+		page_tables[i] = i * 4096 | 3;
+
+	page_tables[0] = 0xB8003;
+	
+	
+	load_pd_table(ptr);
+
+	enable_paging();
+	
+	*((char*)2) = 't';
+	*((char*)2) = 't';
+
 }
 
 

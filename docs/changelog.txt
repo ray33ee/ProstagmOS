@@ -1,3 +1,10 @@
+Versio 1.0.4
+	- memory_list_entry expanded to address entire 1024*1024 space
+	- memory_map_list is now converted to a linked list on allocate_initialise
+	- available flage were inverted, this has been corrected
+	- allocate_pages now implemented
+	- Very basic paging implemented (to see what it takes)
+
 Version 1.0.3
 	- Fixed various warnings
 	- memory_map_list is now setup as a list (but not a linked list yet) in allocate_initialise  
