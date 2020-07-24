@@ -14,7 +14,7 @@ memory_list_entry_t memory_map_list[MEMORY_MAP_LIST_SIZE];
 /* Number of total suitable bytes of memory */
 uint32_t total_available_memory = 0;
 
-void print_map()
+void display_pages()
 {
 	uint32_t pointer = 0;
 		
@@ -24,6 +24,11 @@ void print_map()
 		pointer = memory_map_list[pointer].pointer;
 	}	
 	
+}
+
+uint32_t get_kernel_end()
+{
+	return memory_map_list[0].pointer << 12;
 }
 
 /* Mark a region from 'address' of length 'length' with 'flags' */
@@ -92,7 +97,6 @@ void allocate_initialise(multiboot_info_t* multiboot_info)
 		//Map the last block to the end 
 		memory_map_list[index].pointer = MEMORY_MAP_LIST_SIZE - 1;
 		
-		print_map();
 	}
 	else
 	{
@@ -122,9 +126,9 @@ void* allocate_pages(uint32_t length)
 	{
 		uint32_t block_length = memory_map_list[index].pointer - index - 1;
 		
-		if (memory_map_list[index].available && block_length >= length)
+		if (memory_map_list[index].available && !memory_map_list[index].allocated && block_length >= length)
 		{
-			printf("Length: %X\n", memory_map_list[index].pointer - index - 1);
+			//printf("Length: %X\n", memory_map_list[index].pointer - index - 1);
 			
 			uint32_t next_pointer = memory_map_list[index].pointer; //Save the pointer to the current next item
 			
@@ -135,8 +139,6 @@ void* allocate_pages(uint32_t length)
 			if (block_length != length) //If the block is exactly the required length, then we do not need to create an intermediate node
 				memory_map_list[index + length].pointer = next_pointer; //Set the pointer of the newly created node to fix the list
 				
-
-			print_map();
 			
 			return (void *)(index << 12); //Return pointer to the allocated page
 		}
@@ -150,17 +152,45 @@ void* allocate_pages(uint32_t length)
 // Frees memory pagges at 'address'
 void free_pages(void* address)
 {
-	//	Convert the address to a page index
+
+	uint32_t page_index = (uint32_t)address >> 12;
 	
-	//	If the indexed entry is unallocated or unavailable, return
+	uint32_t list_iterator = 0;
 	
-	//	Walk over memory_map_list
+	while (memory_map_list[list_iterator].pointer != page_index)
+		list_iterator = memory_map_list[list_iterator].pointer;
 	
-	//		If the current points to the index then
+	//Get the memory list entry for the block corresponding to address,, and fetch the entries for the blocks before and after too
+	memory_list_entry_t * previous = &memory_map_list[list_iterator];
+	memory_list_entry_t * this = &memory_map_list[previous->pointer];
+	memory_list_entry_t * next = &memory_map_list[this->pointer];
 	
-	//			If the current entry is unallocated and available, we can merge
+	//Mark the block to free as unallocated
+	this->allocated = 0;
+
+	//A block is mergable (with the deallocated block) if it is available, and not already allocated
+	int previous_mergable = previous->available && !previous->allocated; 
+	int next_mergable = next->available && !next->allocated; 
 	
-	//			Otherwise we must simply change the block to deallocate to deallocated and return
+	//If we cannot merge the unallocated block with any other block, there is nothing left to do
+	if (!previous_mergable && !next_mergable)
+		return;
+		
+	//If the previous and next blocks are mergable, all blocks can be merged into one space
+	if (previous_mergable && next_mergable)
+	{
+		previous->pointer = next->pointer;
+		return;
+	}
+	
+	//If only one of the blocks is mergable, merge that one
+	if (previous_mergable)
+		previous->pointer = this->pointer;
+	else
+	{
+		this->pointer = next->pointer;
+	}		
+	
 }
 
 

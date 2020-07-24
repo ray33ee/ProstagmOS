@@ -45,10 +45,14 @@ typedef struct memory_list_entry memory_list_entry_t;
 extern int _end;
 #define KERNEL_END ((uint32_t)(&_end))
 
+uint32_t get_kernel_end();
+
 void allocate_initialise(multiboot_info_t* multiboot_info);
 
 void* allocate_pages(uint32_t);
 
 void free_pages(void *);
+
+void display_pages();
 
 #endif

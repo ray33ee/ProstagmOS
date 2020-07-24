@@ -1,4 +1,11 @@
-Versio 1.0.4
+Version 1.0.5
+	- print map renamed to display_pages and made visible to other compilation units
+	- When we allocate, we also check that the block is not allocated
+	- free pages function is complete
+	- paging.s renamed to paging_setup.s to make way for paging.c
+	- Paging.c is added and allows basic paging with identity mapping of kernel
+
+Version 1.0.4
 	- memory_list_entry expanded to address entire 1024*1024 space
 	- memory_map_list is now converted to a linked list on allocate_initialise
 	- available flage were inverted, this has been corrected

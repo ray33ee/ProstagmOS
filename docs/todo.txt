@@ -3,3 +3,11 @@ VGA:
 	- Conversions between string, int, float and double
 	- printf support for float numbers, with added support for 8, 16 and 64 bit int/float
 	- Would putting memory_map_list be faster in assembly than C? (kernel takes a noticable pause when loading creating memory_map_list)
+	- Create something more sophisticated for paging. 
+		- void map_logical_to_physical(page_directory, main_table, logical, physical, flags)
+		- When an logical-physical address mapping is requested, check the page directory to see if a page table already exists for that entry.
+		- If it does not exist, create one then map it in the page directory. NOTE: when it is created, be sure that it has an entry in an existing page table, so it can be edited after paging is enabled
+		- Get the corresponding page table from the page directory
+		- Update the correspoding entry in the page table
+		- Create a simple 'map_logical_to_physical' function for the actual mapping (also used if we have to create a new table and map that) then call this from a bigger function
+		
